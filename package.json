@@ -1,0 +1,19 @@
+{
+  "name": "portal-kantah-bonebolango",
+  "version": "1.0.0",
+  "description": "Portal Layanan Internal & Akses Cepat Sistem Kantor Pertanahan ATR/BPN Kabupaten Bone Bolango",
+  "main": "serve.js",
+  "scripts": {
+    "start": "node serve.js",
+    "dev": "node serve.js"
+  },
+  "keywords": [
+    "atr-bpn",
+    "bone-bolango",
+    "portal-internal",
+    "landing-page",
+    "quick-links"
+  ],
+  "author": "Kantor Pertanahan ATR/BPN Bone Bolango",
+  "license": "MIT"
+}

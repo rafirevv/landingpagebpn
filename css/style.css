@@ -1,0 +1,1514 @@
+/* ==============================================================================
+   PORTAL LAYANAN INTERNAL KANTAH ATR/BPN BONE BOLANGO
+   Style System & Visual Design
+   Theme: ATR/BPN Official Navy, Royal Gold, Crisp Slate Backgrounds
+   ============================================================================== */
+
+:root {
+  /* Official ATR/BPN Primary Palette */
+  --bpn-navy-950: #07172B;
+  --bpn-navy-900: #0B2545;
+  --bpn-navy-800: #133660;
+  --bpn-navy-700: #1B4A82;
+  
+  /* Official ATR/BPN Gold & Accent Palette */
+  --bpn-gold-600: #A8811A;
+  --bpn-gold-500: #C59B27;
+  --bpn-gold-400: #D4AF37;
+  --bpn-gold-300: #E6C862;
+
+  /* Semantic Status Colors */
+  --emerald-500: #10B981;
+  --rose-500: #EF4444;
+
+  /* Neutral Surface & Background Colors */
+  --bg-page: #F8FAFC;
+  --bg-card: #FFFFFF;
+  --bg-subtle: #F1F5F9;
+
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #64748B;
+
+  --border-light: #E2E8F0;
+  --border-card-hover: rgba(197, 155, 39, 0.45);
+
+  /* Shadows */
+  --shadow-sm: 0 2px 6px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 4px 14px rgba(15, 23, 42, 0.08);
+  --shadow-xl: 0 20px 40px rgba(11, 37, 69, 0.12);
+  --shadow-glow: 0 0 24px rgba(212, 175, 55, 0.20);
+
+  /* Radii & Transitions */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-smooth: 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Typography */
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* ==============================================================================
+   RESET & BASE STYLES
+   ============================================================================== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  color: var(--text-primary);
+  background-color: var(--bg-page);
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  min-height: 100vh;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button, input, select {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+/* ==============================================================================
+   CUSTOM SCROLLBAR
+   ============================================================================== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--bpn-gold-500);
+}
+
+/* ==============================================================================
+   LAYOUT & CONTAINERS
+   ============================================================================== */
+.container {
+  width: 100%;
+  max-width: 1240px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+  box-sizing: border-box;
+}
+
+.view-hidden {
+  display: none !important;
+}
+
+/* ==============================================================================
+   1. HALAMAN AUTENTIKASI (LOGIN / GATEKEEPER - CENTERED LIQUID GLASS)
+   ============================================================================== */
+.login-page {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: 
+    linear-gradient(135deg, rgba(11, 37, 69, 0.42) 0%, rgba(20, 60, 115, 0.32) 50%, rgba(7, 23, 43, 0.48) 100%),
+    url('../assets/gedung-kantah.jpg?v=2.0') no-repeat center center / cover;
+  padding: 2.5rem 1.25rem;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.login-overlay {
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(circle at 50% 35%, rgba(27, 74, 130, 0.15) 0%, rgba(11, 37, 69, 0.30) 70%, rgba(7, 23, 43, 0.55) 100%);
+  pointer-events: none;
+}
+
+.login-card-container {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Judul Portal Layanan (di luar border form login) */
+.login-portal-header {
+  margin-bottom: 1.75rem;
+  text-align: center;
+  width: max-content;
+  max-width: 95vw;
+  display: flex;
+  justify-content: center;
+}
+
+.login-portal-title {
+  font-size: clamp(1.15rem, 2.2vw, 1.85rem);
+  font-weight: 800;
+  color: #FFFFFF;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  line-height: 1.25;
+  margin-bottom: 0.65rem;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  text-align: center;
+}
+
+/* Card Form Login: Liquid Transparan (Glassmorphism) */
+.login-card {
+  width: 100%;
+  background: linear-gradient(135deg, rgba(11, 37, 69, 0.52) 0%, rgba(7, 23, 43, 0.62) 100%);
+  backdrop-filter: blur(24px) saturate(190%);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  border-radius: 24px;
+  box-shadow: 
+    0 30px 70px rgba(0, 0, 0, 0.45),
+    0 10px 25px rgba(7, 23, 43, 0.35),
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.65),
+    inset 0 -1.5px 2px rgba(255, 255, 255, 0.12);
+  padding: 2.25rem 2.25rem 1.85rem;
+  position: relative;
+  animation: fadeInScale 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.login-header {
+  margin-bottom: 1.35rem;
+}
+
+/* Brand Header ATR/BPN di dalam kartu */
+.login-brand-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.login-brand-logo-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1.5px solid rgba(212, 175, 55, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  flex-shrink: 0;
+}
+
+.login-brand-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.login-brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.login-brand-text .brand-sup {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  color: #CBD5E1;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.login-brand-text .brand-main {
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #F5D061;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+}
+
+.login-brand-text .brand-sub {
+  font-size: 0.70rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.login-body {
+  padding: 0;
+}
+
+/* Alert Box */
+.login-alert {
+  display: none;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+  animation: slideDown 0.25s ease;
+}
+
+.login-alert.show {
+  display: flex;
+}
+
+.login-alert.error {
+  background: rgba(220, 38, 38, 0.3);
+  color: #FEE2E2;
+  border: 1px solid rgba(248, 113, 113, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.login-alert.success {
+  background: rgba(5, 150, 105, 0.3);
+  color: #D1FAE5;
+  border: 1px solid rgba(52, 211, 153, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+/* Form Inputs */
+.form-group {
+  margin-bottom: 1.15rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #F8FAFC;
+  margin-bottom: 0.45rem;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 0.9rem;
+  color: rgba(255, 255, 255, 0.65);
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+  transition: color 0.15s ease;
+}
+
+/* Sembunyikan native reveal icon bawaan Microsoft Edge & Chromium */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  pointer-events: none !important;
+}
+
+input[type="password"]::-webkit-contacts-auto-fill-button,
+input[type="password"]::-webkit-credentials-auto-fill-button {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.75rem 2.75rem 0.75rem 2.45rem;
+  font-size: 0.9rem;
+  border: 1.5px solid rgba(255, 255, 255, 0.32);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #FFFFFF;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.25), 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.form-control::placeholder {
+  color: rgba(226, 232, 240, 0.65);
+}
+
+.form-control:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.22);
+  border-color: #F5D061;
+  box-shadow: 0 0 0 3px rgba(245, 208, 97, 0.3), inset 0 1px 2px rgba(255, 255, 255, 0.2);
+}
+
+.form-control:focus ~ .input-icon,
+.input-wrapper:focus-within .input-icon {
+  color: #F5D061;
+}
+
+.btn-toggle-pass {
+  position: absolute;
+  right: 0.65rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  padding: 0;
+  transition: color 0.15s ease, background-color 0.15s ease;
+  z-index: 5;
+}
+
+.btn-toggle-pass:hover {
+  color: #FFFFFF;
+  background-color: rgba(255, 255, 255, 0.18);
+}
+
+.btn-toggle-pass:focus-visible {
+  outline: 2px solid #F5D061;
+  outline-offset: 1px;
+}
+
+.form-extras {
+  display: flex;
+  align-items: center;
+  margin-top: 0.5rem;
+  margin-bottom: 1.35rem;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: #FFFFFF;
+  cursor: pointer;
+  user-select: none;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.checkbox-label input[type="checkbox"] {
+  accent-color: #FFFFFF;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.btn-submit-login {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1.25rem;
+  background: linear-gradient(135deg, #C59B27 0%, #D4AF37 50%, #A8811A 100%);
+  color: #07172B;
+  font-weight: 800;
+  font-size: 0.92rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  box-shadow: 
+    0 6px 20px rgba(0, 0, 0, 0.35),
+    0 2px 8px rgba(197, 155, 39, 0.4),
+    inset 0 1px 1px rgba(255, 255, 255, 0.5);
+  transition: all 0.2s ease;
+}
+
+.btn-submit-login:hover {
+  background: linear-gradient(135deg, #D4AF37 0%, #E6C862 50%, #C59B27 100%);
+  box-shadow: 
+    0 8px 24px rgba(212, 175, 55, 0.45),
+    0 2px 10px rgba(0, 0, 0, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-submit-login:active {
+  transform: translateY(0);
+}
+
+.btn-submit-login.loading {
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.login-card-note {
+  margin-top: 1.5rem;
+  padding-top: 1.15rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  text-align: center;
+}
+
+.note-main {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.note-main svg {
+  color: #FFFFFF;
+  flex-shrink: 0;
+}
+
+.note-sub {
+  font-size: 0.74rem;
+  color: #FFFFFF;
+  line-height: 1.4;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.login-footer-copy {
+  margin-top: 1.25rem;
+  font-size: 0.78rem;
+  color: #FFFFFF;
+  text-align: center;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85), 0 0 12px rgba(7, 23, 43, 0.95);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* ==============================================================================
+   2. HALAMAN DASHBOARD / QUICK ACCESS PORTAL
+   ============================================================================== */
+.dashboard-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ==============================================================================
+   UNIFIED TOP BANNER (HEADER + WELCOME HERO - FULL BLUE SEAMLESS)
+   ============================================================================== */
+.portal-top-banner {
+  position: relative;
+  background: radial-gradient(circle at 80% 20%, #174275 0%, #0B2545 60%, #07172B 100%);
+  color: #FFFFFF;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.20);
+  box-shadow: 0 10px 30px rgba(7, 23, 43, 0.10);
+  overflow: hidden;
+}
+
+/* Background grid shapes covers the entire top block from logo to welcome text */
+.portal-top-banner .hero-bg-shapes {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    radial-gradient(circle at 10% 90%, rgba(212, 175, 55, 0.12) 0%, transparent 40%),
+    linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 100% 100%, 32px 32px, 32px 32px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Gold line on top of header */
+.header-top-accent {
+  position: relative;
+  z-index: 2;
+  height: 3px;
+  background: linear-gradient(90deg, #07172B, var(--bpn-gold-400), #07172B);
+}
+
+/* Header & Navigation Bar: Transparan Menyatu dengan Hero Banner */
+.header-portal {
+  position: relative;
+  z-index: 2;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-bottom: none;
+  box-shadow: none;
+}
+
+/* Header Full-Width Layout: Logo di pojok kiri, Jam & User di pojok kanan */
+.header-portal .container {
+  max-width: 100%;
+  padding-left: 2rem;
+  padding-right: 2rem;
+  width: 100%;
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+/* Brand Identity */
+.brand-link {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  user-select: none;
+}
+
+.brand-logo-wrap {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: transparent;
+}
+
+.brand-logo-wrap img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.45));
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-subtitle-top {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bpn-gold-400);
+  line-height: 1.1;
+}
+
+.brand-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  line-height: 1.25;
+}
+
+.brand-subtitle-bottom {
+  font-size: 0.74rem;
+  color: rgba(226, 232, 240, 0.75);
+  font-weight: 500;
+}
+
+/* Header Right / Tools: Jam & Badge Keluar */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Live Clock Widget: Glass Pill */
+.clock-widget {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.85rem;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  font-size: 0.78rem;
+  color: rgba(226, 232, 240, 0.88);
+}
+
+.clock-icon {
+  color: var(--bpn-gold-400);
+  width: 14px;
+  height: 14px;
+}
+
+.clock-time {
+  font-weight: 700;
+  color: #FFFFFF;
+  font-variant-numeric: tabular-nums;
+}
+
+
+.btn-logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #FECACA;
+  background: rgba(239, 68, 68, 0.14);
+  border: 1px solid rgba(239, 68, 68, 0.32);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all var(--transition-fast);
+}
+
+.btn-logout:hover {
+  background: rgba(239, 68, 68, 0.28);
+  color: #FFFFFF;
+  border-color: rgba(239, 68, 68, 0.5);
+  transform: translateY(-1px);
+}
+
+/* ==============================================================================
+   HERO / BANNER SECTION (MENYATU PENUH DENGAN HEADER)
+   ============================================================================== */
+.hero-section {
+  position: relative;
+  z-index: 2;
+  background: transparent;
+  color: #FFFFFF;
+  padding: 0.15rem 0 1.5rem;
+  overflow: visible;
+  border-bottom: none;
+  box-shadow: none;
+}
+
+/* Penempatan teks banner berada di ujung kiri layar (Full-Width sejajar dengan header) */
+.hero-section .container {
+  max-width: 100%;
+  width: 100%;
+  padding-left: 2rem;
+  padding-right: 2rem;
+  margin: 0;
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+  text-align: left;
+}
+
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.hero-title {
+  font-size: 1.85rem;
+  font-weight: 800;
+  line-height: 1.25;
+  margin-bottom: 0.35rem;
+  letter-spacing: -0.02em;
+  text-align: left;
+  max-width: 100%;
+}
+
+.hero-title span {
+  color: var(--bpn-gold-400);
+  display: inline-block;
+}
+
+.hero-subtitle {
+  font-size: 0.95rem;
+  font-weight: 400;
+  color: rgba(226, 232, 240, 0.88);
+  line-height: 1.5;
+  margin: 0;
+  max-width: 800px;
+  text-align: left;
+}
+
+/* ==============================================================================
+   MAIN CONTENT & QUICK LINKS GRID
+   ============================================================================== */
+.main-section {
+  flex: 1;
+  padding: 1.25rem 0 1.25rem;
+}
+
+
+/* Grid Kartu Tautan */
+.links-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+/* Quick Link Card */
+.link-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+  padding: 1.15rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  transition: all var(--transition-smooth);
+  overflow: hidden;
+}
+
+/* Hover effect: lift and gold highlight */
+.link-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--border-card-hover);
+  box-shadow: var(--shadow-md), var(--shadow-glow);
+}
+
+.link-card.featured-card {
+  border-left: 3.5px solid var(--bpn-gold-500);
+}
+
+.link-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.card-icon-wrapper {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform var(--transition-normal);
+}
+
+.card-icon-wrapper svg {
+  width: 19px;
+  height: 19px;
+}
+
+.link-card:hover .card-icon-wrapper {
+  transform: scale(1.06);
+}
+
+/* Thematic Icon Backgrounds */
+.icon-gold {
+  background: #FEF8E7;
+  color: var(--bpn-gold-600);
+  border: 1px solid rgba(197, 155, 39, 0.25);
+}
+
+.icon-sky {
+  background: #EBF8FF;
+  color: #0284C7;
+  border: 1px solid rgba(2, 132, 199, 0.2);
+}
+
+.icon-emerald {
+  background: #ECFDF5;
+  color: #059669;
+  border: 1px solid rgba(5, 150, 105, 0.2);
+}
+
+.icon-navy {
+  background: #EFF6FF;
+  color: var(--bpn-navy-800);
+  border: 1px solid rgba(19, 54, 96, 0.2);
+}
+
+.icon-amber {
+  background: #FFFBEB;
+  color: #D97706;
+  border: 1px solid rgba(217, 119, 6, 0.25);
+}
+
+/* Badge System */
+.badge-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.02em;
+}
+
+.badge-gold {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+.badge-sky {
+  background: #E0F2FE;
+  color: #0369A1;
+}
+
+.badge-emerald {
+  background: #D1FAE5;
+  color: #065F46;
+}
+
+.badge-navy {
+  background: #E2E8F0;
+  color: var(--bpn-navy-900);
+}
+
+.badge-amber {
+  background: #FEF3C7;
+  color: #B45309;
+}
+
+/* Card Body */
+.card-content {
+  margin-bottom: 0.85rem;
+  flex: 1;
+}
+
+.card-category-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.card-title {
+  font-size: 1.02rem;
+  font-weight: 800;
+  color: var(--bpn-navy-900);
+  line-height: 1.3;
+  margin-bottom: 0.5rem;
+  transition: color var(--transition-fast);
+}
+
+.link-card:hover .card-title {
+  color: var(--bpn-navy-700);
+}
+
+
+.card-target-url {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-family: monospace;
+  background: var(--bg-subtle);
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Card Actions / Footer */
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-light);
+}
+
+.btn-open-link {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.48rem 0.85rem;
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  background: var(--bpn-navy-900);
+  transition: all var(--transition-fast);
+  box-shadow: 0 1px 4px rgba(11, 37, 69, 0.12);
+}
+
+.btn-open-link svg {
+  width: 14px;
+  height: 14px;
+}
+
+.btn-open-link:hover {
+  background: var(--bpn-gold-500);
+  color: #FFFFFF;
+  box-shadow: 0 3px 10px rgba(197, 155, 39, 0.3);
+}
+
+.btn-copy-link {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.btn-copy-link svg {
+  width: 14px;
+  height: 14px;
+}
+
+.btn-copy-link:hover {
+  background: #E2E8F0;
+  color: var(--bpn-navy-900);
+  border-color: #CBD5E1;
+}
+
+
+/* ==============================================================================
+   FOOTER SECTION
+   ============================================================================== */
+.footer-portal {
+  background: var(--bpn-navy-950);
+  color: #94A3B8;
+  border-top: 3px solid var(--bpn-gold-500);
+  padding-top: 0.95rem;
+  margin-top: auto;
+}
+
+.footer-brand-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.footer-brand-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.footer-instansi-title {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  line-height: 1.3;
+}
+
+.footer-instansi-desc {
+  font-size: 0.74rem;
+  line-height: 1.45;
+  max-width: 700px;
+  margin: 0;
+}
+
+.footer-motto-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(212, 175, 55, 0.12);
+  color: var(--bpn-gold-300);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  padding: 0.22rem 0.65rem;
+  border-radius: var(--radius-full);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.footer-bottom-bar {
+  padding: 0.55rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: #64748B;
+}
+
+.btn-scroll-top {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.22rem 0.65rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-full);
+  color: #94A3B8;
+  font-size: 0.70rem;
+  transition: all var(--transition-fast);
+}
+
+.btn-scroll-top:hover {
+  background: var(--bpn-gold-500);
+  color: #FFFFFF;
+}
+
+/* ==============================================================================
+   TOAST NOTIFICATION COMPONENT
+   ============================================================================== */
+.toast-container {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  background: #FFFFFF;
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1.15rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--border-light);
+  min-width: 280px;
+  max-width: 380px;
+  animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.toast.hiding {
+  opacity: 0;
+  transform: translateX(100%);
+}
+
+.toast-icon {
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+
+.toast-success .toast-icon { color: var(--emerald-500); }
+.toast-info .toast-icon { color: var(--bpn-navy-700); }
+.toast-error .toast-icon { color: var(--rose-500); }
+
+.toast-message {
+  font-size: 0.84rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+/* ==============================================================================
+   MODAL LOGOUT DIALOG
+   ============================================================================== */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(7, 23, 43, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modal-backdrop.open {
+  display: flex;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal-card {
+  background: #FFFFFF;
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  box-shadow: var(--shadow-xl);
+  animation: popIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-icon-wrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #FEE2E2;
+  color: #DC2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  margin: 0 auto 1.25rem;
+}
+
+.modal-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--bpn-navy-900);
+  margin-bottom: 0.5rem;
+}
+
+.modal-text {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.btn-modal-cancel {
+  flex: 1;
+  padding: 0.7rem;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.88rem;
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-light);
+  transition: background var(--transition-fast);
+}
+
+.btn-modal-cancel:hover {
+  background: #E2E8F0;
+}
+
+.btn-modal-confirm {
+  flex: 1;
+  padding: 0.7rem;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: 0.88rem;
+  background: #DC2626;
+  color: #FFFFFF;
+  transition: background var(--transition-fast);
+}
+
+.btn-modal-confirm:hover {
+  background: #B91C1C;
+}
+
+/* ==============================================================================
+   KEYFRAME ANIMATIONS
+   ============================================================================== */
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ==============================================================================
+   RESPONSIVE MEDIA QUERIES (DESKTOP, TABLET, MOBILE, & SMALL SCREENS)
+   ============================================================================== */
+
+/* 1. Laptops & Tablet Landscape (max-width: 1024px) */
+@media (max-width: 1024px) {
+  .container,
+  .header-portal .container {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+
+  .links-grid {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 0.85rem;
+  }
+}
+
+/* 2. Tablet Portrait (max-width: 860px) */
+@media (max-width: 860px) {
+  .header-actions .clock-widget {
+    display: none;
+  }
+
+  .hero-title {
+    font-size: 1.6rem;
+    text-align: left;
+  }
+
+  .hero-subtitle {
+    font-size: 0.9rem;
+    text-align: left;
+  }
+
+  .links-grid {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+}
+
+/* 3. Mobile Phones (max-width: 640px) */
+@media (max-width: 640px) {
+  .container,
+  .header-portal .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  /* Header Mobile */
+  .header-inner {
+    padding: 0.5rem 0;
+    gap: 0.5rem;
+  }
+
+  .brand-logo-wrap,
+  .brand-logo-wrap img {
+    width: 38px;
+    height: 38px;
+  }
+
+  .brand-title {
+    font-size: 0.95rem;
+  }
+
+  .brand-subtitle-top {
+    font-size: 0.62rem;
+  }
+
+  .brand-subtitle-bottom {
+    display: none;
+  }
+
+  .header-actions {
+    gap: 0.5rem;
+  }
+
+
+  .btn-logout {
+    padding: 0.45rem 0.7rem;
+    font-size: 0.78rem;
+  }
+
+  /* Login Centered Responsive */
+  .login-page {
+    padding: 1.5rem 1rem;
+    background-position: center 65%;
+  }
+
+  .login-card {
+    padding: 1.75rem 1.25rem 1.5rem;
+  }
+
+  .login-portal-title {
+    font-size: clamp(0.92rem, 4.3vw, 1.35rem);
+    white-space: nowrap;
+  }
+
+  .form-control {
+    font-size: 16px; /* Mencegah auto-zoom di browser iOS */
+  }
+
+  /* Hero Section Mobile */
+  .hero-section {
+    padding: 1.25rem 0;
+  }
+
+  .hero-title {
+    font-size: 1.35rem;
+    line-height: 1.3;
+    margin-bottom: 0.35rem;
+    text-align: left;
+  }
+
+  .hero-title span {
+    white-space: normal;
+  }
+
+  .hero-subtitle {
+    font-size: 0.85rem;
+    line-height: 1.45;
+    text-align: left;
+  }
+
+  /* Link Cards Grid Mobile */
+  .links-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .link-card {
+    padding: 0.95rem 1rem;
+  }
+
+  .card-title {
+    font-size: 0.98rem;
+  }
+
+
+  .card-actions {
+    padding-top: 0.65rem;
+    gap: 0.45rem;
+  }
+
+  .btn-open-link {
+    min-height: 38px;
+    font-size: 0.78rem;
+  }
+
+  .btn-copy-link {
+    width: 38px;
+    height: 38px;
+  }
+
+  /* Footer Mobile */
+  .footer-portal {
+    padding-top: 0.85rem;
+  }
+
+  .footer-brand-wrap {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.65rem;
+  }
+
+  .footer-bottom-bar {
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.55rem 0;
+    text-align: center;
+  }
+
+  .btn-scroll-top {
+    align-self: center;
+  }
+
+  /* Toast Notification Mobile */
+  .toast-container {
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+  }
+
+  .toast {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* Modal Logout Mobile */
+  .modal-card {
+    padding: 1.5rem 1.25rem;
+  }
+}
+
+/* 4. Extra Small Mobile (max-width: 380px) */
+@media (max-width: 380px) {
+  .container,
+  .header-portal .container {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .brand-title {
+    font-size: 0.85rem;
+  }
+
+
+  .btn-logout span {
+    display: none;
+  }
+
+  .btn-logout {
+    padding: 0.45rem;
+    border-radius: 50%;
+    width: 34px;
+    height: 34px;
+    justify-content: center;
+  }
+}
