@@ -151,15 +151,38 @@
 
   /**
    * ============================================================================
-   * MANAJEMEN STATISTIK PORTAL (TOTAL KUNJUNGAN)
+   * MANAJEMEN STATISTIK PORTAL (TOTAL KUNJUNGAN TERPUSAT & REALTIME)
+   * ============================================================================
+   * Terintegrasi secara menyeluruh antar-perangkat (bukan hitungan per device).
+   * Nilai dasar (default baseline) dimulai dari angka 372.
+   * Dilengkapi Heartbeat Polling Realtime & BroadcastChannel Sinkronisasi Antar-Tab.
    * ============================================================================
    */
   const StatsManager = {
-    apiEndpoint: "api/stats.php",
-    debounceKey: "bpn_last_visit_ts",
-    localVisitsKey: "bpn_portal_visits",
-    localClicksKey: "bpn_portal_clicks",
+    DEFAULT_BASELINE: 372,
+    sessionKey: "bpn_portal_visit_recorded",
+    cachedVisitsKey: "bpn_portal_total_visits_cache",
+    currentTotal: 372,
+    pollTimer: null,
+    broadcastChannel: null,
     isInitialized: false,
+    isFetching: false,
+
+    getApiUrl(query = "") {
+      try {
+        let path = window.location.pathname || "/";
+        if (path.endsWith("index.html")) {
+          path = path.substring(0, path.lastIndexOf("/") + 1);
+        } else if (!path.endsWith("/")) {
+          path = path + "/";
+        }
+        const origin = window.location.origin || (window.location.protocol + "//" + window.location.host);
+        const base = origin + path + "api/stats.php";
+        return query ? (base + (query.startsWith("?") ? query : "?" + query)) : base;
+      } catch {
+        return "api/stats.php" + (query ? (query.startsWith("?") ? query : "?" + query) : "");
+      }
+    },
 
     formatNumber(num) {
       try {
@@ -170,97 +193,223 @@
     },
 
     updateUI(totalVisits, animated = false) {
-      const totalVisitsEl = document.getElementById("stat-total-visits");
-
-      if (totalVisitsEl && totalVisits !== undefined) {
-        totalVisitsEl.textContent = this.formatNumber(totalVisits);
-        if (animated) {
-          totalVisitsEl.classList.remove("pulse-anim");
-          void totalVisitsEl.offsetWidth;
-          totalVisitsEl.classList.add("pulse-anim");
-        }
+      if (typeof totalVisits !== "number" || isNaN(totalVisits)) {
+        totalVisits = parseInt(totalVisits, 10);
       }
+      if (isNaN(totalVisits) || totalVisits < this.DEFAULT_BASELINE) {
+        totalVisits = this.DEFAULT_BASELINE;
+      }
+
+      const prevTotal = this.currentTotal;
+      this.currentTotal = totalVisits;
+
+      try {
+        localStorage.setItem(this.cachedVisitsKey, String(totalVisits));
+      } catch {}
+
+      const formatted = this.formatNumber(totalVisits);
+
+      // Perbarui seluruh elemen penampil total kunjungan di halaman
+      const targets = [
+        document.getElementById("stat-total-visits"),
+        ...document.querySelectorAll(".login-stat-visits")
+      ].filter(Boolean);
+
+      targets.forEach(el => {
+        el.textContent = formatted;
+        if (animated || (prevTotal !== null && totalVisits > prevTotal)) {
+          el.classList.remove("pulse-anim");
+          void el.offsetWidth;
+          el.classList.add("pulse-anim");
+        }
+      });
     },
 
     init() {
-      if (this.isInitialized) return;
+      if (this.isInitialized) {
+        this.updateUI(this.currentTotal);
+        return;
+      }
       this.isInitialized = true;
 
-      // Debounce kunjungan 10 detik agar tidak double count saat refresh cepat
-      const now = Date.now();
-      const lastVisit = parseInt(sessionStorage.getItem(this.debounceKey) || "0", 10);
-      const shouldCountVisit = (now - lastVisit) > 10000;
+      // Ambil nilai awal dari cache jika ada, minimal 372
+      try {
+        const cached = parseInt(localStorage.getItem(this.cachedVisitsKey) || "", 10);
+        if (!isNaN(cached) && cached >= this.DEFAULT_BASELINE) {
+          this.currentTotal = cached;
+        } else {
+          this.currentTotal = this.DEFAULT_BASELINE;
+        }
+      } catch {
+        this.currentTotal = this.DEFAULT_BASELINE;
+      }
 
-      if (shouldCountVisit) {
-        sessionStorage.setItem(this.debounceKey, String(now));
+      this.updateUI(this.currentTotal, false);
+
+      // Setup BroadcastChannel untuk sinkronisasi instan antar-tab pada peramban yang sama
+      try {
+        if ("BroadcastChannel" in window) {
+          this.broadcastChannel = new BroadcastChannel("bpn_portal_stats");
+          this.broadcastChannel.onmessage = (event) => {
+            if (event && event.data && typeof event.data.totalVisits === "number") {
+              if (event.data.totalVisits > this.currentTotal) {
+                this.updateUI(event.data.totalVisits, true);
+              }
+            }
+          };
+        }
+      } catch {}
+
+      // Catat kunjungan satu kali per sesi (terpusat ke server bersama)
+      let alreadyRecorded = false;
+      try {
+        alreadyRecorded = sessionStorage.getItem(this.sessionKey) === "1";
+      } catch {}
+
+      if (!alreadyRecorded) {
+        try {
+          sessionStorage.setItem(this.sessionKey, "1");
+        } catch {}
         this.recordVisit();
       } else {
         this.fetchStats();
       }
+
+      // Mulai Heartbeat Polling Realtime (Memantau kunjungan & klik dari seluruh perangkat lain)
+      this.startRealtimePolling();
+
+      // Sinkronisasi seketika saat pengguna membuka kembali tab atau fokus ke browser
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) {
+          this.fetchStats();
+          this.restartPolling();
+        } else {
+          this.restartPolling();
+        }
+      });
+
+      window.addEventListener("focus", () => {
+        this.fetchStats();
+      });
+
+      window.addEventListener("online", () => {
+        this.fetchStats();
+      });
+    },
+
+    broadcastUpdate(totalVisits) {
+      if (this.broadcastChannel) {
+        try {
+          this.broadcastChannel.postMessage({
+            type: "STATS_UPDATE",
+            totalVisits: totalVisits,
+            timestamp: Date.now()
+          });
+        } catch {}
+      }
     },
 
     fetchStats() {
-      fetch(this.apiEndpoint + "?t=" + Date.now())
+      if (this.isFetching) return;
+      this.isFetching = true;
+
+      const url = this.getApiUrl("t=" + Date.now());
+
+      fetch(url, {
+        method: "GET",
+        headers: { "Accept": "application/json" }
+      })
         .then(res => {
           if (!res.ok) throw new Error("HTTP " + res.status);
           return res.json();
         })
         .then(data => {
           if (data && data.success) {
-            localStorage.setItem(this.localVisitsKey, String(data.visits));
-            localStorage.setItem(this.localClicksKey, String(data.clicks));
             const total = data.totalVisits !== undefined ? data.totalVisits : ((data.visits || 0) + (data.clicks || 0));
-            this.updateUI(total);
+            if (total >= this.DEFAULT_BASELINE) {
+              const changed = total !== this.currentTotal;
+              this.updateUI(total, changed);
+              if (changed) {
+                this.broadcastUpdate(total);
+              }
+            }
           }
         })
         .catch(() => {
-          const localVisits = parseInt(localStorage.getItem(this.localVisitsKey) || "372", 10);
-          const localClicks = parseInt(localStorage.getItem(this.localClicksKey) || "0", 10);
-          this.updateUI(localVisits + localClicks);
+          // Server sedang memproses atau offline sementara; pertahankan angka server terakhir tanpa menghitung lokal
+        })
+        .finally(() => {
+          this.isFetching = false;
         });
     },
 
     recordVisit() {
-      fetch(this.apiEndpoint + "?action=visit&t=" + Date.now(), { method: "POST" })
+      const url = this.getApiUrl("action=visit&t=" + Date.now());
+
+      fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+      })
         .then(res => res.json())
         .then(data => {
           if (data && data.success) {
-            localStorage.setItem(this.localVisitsKey, String(data.visits));
-            localStorage.setItem(this.localClicksKey, String(data.clicks));
             const total = data.totalVisits !== undefined ? data.totalVisits : ((data.visits || 0) + (data.clicks || 0));
-            this.updateUI(total, true);
+            if (total >= this.DEFAULT_BASELINE) {
+              this.updateUI(total, true);
+              this.broadcastUpdate(total);
+            }
           }
         })
         .catch(() => {
-          let visits = parseInt(localStorage.getItem(this.localVisitsKey) || "371", 10) + 1;
-          const clicks = parseInt(localStorage.getItem(this.localClicksKey) || "0", 10);
-          localStorage.setItem(this.localVisitsKey, String(visits));
-          this.updateUI(visits + clicks, true);
+          this.updateUI(this.currentTotal, false);
         });
     },
 
     recordClick(linkId) {
-      // Optimistic instant UI update
-      const totalVisitsEl = document.getElementById("stat-total-visits");
-      let currentVal = parseInt((totalVisitsEl && totalVisitsEl.textContent ? totalVisitsEl.textContent.replace(/\./g, "") : "0"), 10);
-      if (isNaN(currentVal)) currentVal = 0;
-      this.updateUI(currentVal + 1, true);
+      // Optimistic instant feedback
+      const nextVal = (this.currentTotal || this.DEFAULT_BASELINE) + 1;
+      this.updateUI(nextVal, true);
+      this.broadcastUpdate(nextVal);
 
-      const url = `${this.apiEndpoint}?action=click&linkId=${encodeURIComponent(linkId || "")}&t=${Date.now()}`;
-      fetch(url, { method: "POST" })
+      const url = this.getApiUrl(`action=click&linkId=${encodeURIComponent(linkId || "")}&t=${Date.now()}`);
+
+      fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+      })
         .then(res => res.json())
         .then(data => {
           if (data && data.success) {
-            localStorage.setItem(this.localVisitsKey, String(data.visits));
-            localStorage.setItem(this.localClicksKey, String(data.clicks));
             const total = data.totalVisits !== undefined ? data.totalVisits : ((data.visits || 0) + (data.clicks || 0));
-            this.updateUI(total);
+            if (total >= this.DEFAULT_BASELINE) {
+              this.updateUI(total);
+              this.broadcastUpdate(total);
+            }
           }
         })
         .catch(() => {
-          let clicks = parseInt(localStorage.getItem(this.localClicksKey) || "0", 10) + 1;
-          localStorage.setItem(this.localClicksKey, String(clicks));
+          // Jangan rollback agar tampilan tidak flick
         });
+    },
+
+    startRealtimePolling() {
+      this.stopRealtimePolling();
+      // 4 detik saat tab aktif, 15 detik saat tab di latar belakang (hemat daya)
+      const intervalMs = document.hidden ? 15000 : 4000;
+      this.pollTimer = setInterval(() => {
+        this.fetchStats();
+      }, intervalMs);
+    },
+
+    restartPolling() {
+      this.startRealtimePolling();
+    },
+
+    stopRealtimePolling() {
+      if (this.pollTimer) {
+        clearInterval(this.pollTimer);
+        this.pollTimer = null;
+      }
     }
   };
 
@@ -277,11 +426,13 @@
       if (dashboardView) dashboardView.classList.remove("view-hidden");
 
       renderLinksGrid();
-      StatsManager.init();
+      StatsManager.updateUI(StatsManager.currentTotal);
       window.scrollTo(0, 0);
     } else {
       if (dashboardView) dashboardView.classList.add("view-hidden");
       if (loginView) loginView.classList.remove("view-hidden");
+
+      StatsManager.updateUI(StatsManager.currentTotal);
 
       // Fokuskan langsung ke field password
       const passField = document.getElementById("login-password");
@@ -562,6 +713,7 @@
     initLoginForm();
     initShortcutsAndScroll();
     initLogoutModal();
+    StatsManager.init();
     renderView();
   }
 

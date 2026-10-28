@@ -33,7 +33,8 @@ const server = http.createServer((req, res) => {
     });
 
     const statsFile = path.join(ROOT, 'data', 'stats.json');
-    let stats = { visits: 372, clicks: 0, lastUpdated: new Date().toISOString(), linkClicks: {} };
+    const DEFAULT_BASELINE = 372;
+    let stats = { visits: DEFAULT_BASELINE, clicks: 0, lastUpdated: new Date().toISOString(), linkClicks: {} };
 
     try {
       if (fs.existsSync(statsFile)) {
@@ -41,11 +42,15 @@ const server = http.createServer((req, res) => {
       }
     } catch (e) {}
 
+    if (stats.visits === undefined || stats.visits < DEFAULT_BASELINE) {
+      stats.visits = DEFAULT_BASELINE;
+    }
+
     const action = parsedUrl.searchParams.get('action');
     const linkId = parsedUrl.searchParams.get('linkId');
 
     if (action === 'visit') {
-      stats.visits = (stats.visits || 0) + 1;
+      stats.visits = (stats.visits || DEFAULT_BASELINE) + 1;
       stats.lastUpdated = new Date().toISOString();
     } else if (action === 'click') {
       stats.clicks = (stats.clicks || 0) + 1;
@@ -54,9 +59,14 @@ const server = http.createServer((req, res) => {
         stats.linkClicks[linkId] = (stats.linkClicks[linkId] || 0) + 1;
       }
       stats.lastUpdated = new Date().toISOString();
+    } else if (action === 'reset') {
+      stats.visits = DEFAULT_BASELINE;
+      stats.clicks = 0;
+      stats.linkClicks = {};
+      stats.lastUpdated = new Date().toISOString();
     }
 
-    if (action === 'visit' || action === 'click' || !fs.existsSync(statsFile)) {
+    if (action === 'visit' || action === 'click' || action === 'reset' || !fs.existsSync(statsFile)) {
       try {
         const dataDir = path.join(ROOT, 'data');
         if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
@@ -64,7 +74,7 @@ const server = http.createServer((req, res) => {
       } catch (e) {}
     }
 
-    const visits = stats.visits || 1;
+    const visits = stats.visits || DEFAULT_BASELINE;
     const clicks = stats.clicks || 0;
     const totalVisits = visits + clicks;
 
