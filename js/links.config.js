@@ -107,7 +107,7 @@ const QUICK_LINKS = [
     url: "https://sitrack.aliapps.my.id/",
     icon: "file-text",
     category: "Monitoring & Pelayanan",
-    badge: "Tracking Berkas",
+    badge: "Pradaftar Berkas",
     badgeType: "sky",
     featured: true,
     target: "_blank"
@@ -131,7 +131,7 @@ const QUICK_LINKS = [
     url: "https://sipantas.sibolang.net/pengaturan",
     icon: "file-text",
     category: "Pelayanan & Berkas",
-    badge: "Pradaftar Berkas",
+    badge: "Monitoring Berkas",
     badgeType: "sky",
     featured: true,
     target: "_blank"
@@ -156,6 +156,18 @@ const QUICK_LINKS = [
     icon: "archive",
     category: "Pelayanan & Berkas",
     badge: "Manajemen Warkah",
+    badgeType: "emerald",
+    featured: true,
+    target: "_blank"
+  },
+
+  {
+    id: "btsuw-bonbol",
+    title: "BTSUW - Arsip Warkah",
+    url: "https://btsuw.sibolang.net/",
+    icon: "archive",
+    category: "Pelayanan & Berkas",
+    badge: "Arsip Warkah",
     badgeType: "emerald",
     featured: true,
     target: "_blank"

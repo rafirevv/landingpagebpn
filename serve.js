@@ -21,6 +21,63 @@ const MIME_TYPES = {
 };
 
 const server = http.createServer((req, res) => {
+  const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+  const pathname = parsedUrl.pathname;
+
+  // Handle stats API endpoint
+  if (pathname === '/api/stats.php' || pathname === '/api/stats') {
+    res.writeHead(200, {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Access-Control-Allow-Origin': '*'
+    });
+
+    const statsFile = path.join(ROOT, 'data', 'stats.json');
+    let stats = { visits: 372, clicks: 0, lastUpdated: new Date().toISOString(), linkClicks: {} };
+
+    try {
+      if (fs.existsSync(statsFile)) {
+        stats = { ...stats, ...JSON.parse(fs.readFileSync(statsFile, 'utf8')) };
+      }
+    } catch (e) {}
+
+    const action = parsedUrl.searchParams.get('action');
+    const linkId = parsedUrl.searchParams.get('linkId');
+
+    if (action === 'visit') {
+      stats.visits = (stats.visits || 0) + 1;
+      stats.lastUpdated = new Date().toISOString();
+    } else if (action === 'click') {
+      stats.clicks = (stats.clicks || 0) + 1;
+      if (linkId) {
+        stats.linkClicks = stats.linkClicks || {};
+        stats.linkClicks[linkId] = (stats.linkClicks[linkId] || 0) + 1;
+      }
+      stats.lastUpdated = new Date().toISOString();
+    }
+
+    if (action === 'visit' || action === 'click' || !fs.existsSync(statsFile)) {
+      try {
+        const dataDir = path.join(ROOT, 'data');
+        if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+        fs.writeFileSync(statsFile, JSON.stringify(stats, null, 2), 'utf8');
+      } catch (e) {}
+    }
+
+    const visits = stats.visits || 1;
+    const clicks = stats.clicks || 0;
+    const totalVisits = visits + clicks;
+
+    res.end(JSON.stringify({
+      success: true,
+      totalVisits: totalVisits,
+      visits: visits,
+      clicks: clicks,
+      lastUpdated: stats.lastUpdated
+    }));
+    return;
+  }
+
   // Parse clean URL path
   let safePath = path.normalize(decodeURI(req.url.split('?')[0])).replace(/^(\.\.[\/\\])+/, '');
   if (safePath === '/' || safePath === '\\') {

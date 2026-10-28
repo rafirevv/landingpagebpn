@@ -29,7 +29,7 @@
     rel="stylesheet">
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="css/style.css?v=1.5.8">
+  <link rel="stylesheet" href="css/style.css?v=1.6.0">
 </head>
 
 <body>
@@ -156,26 +156,40 @@
               </div>
             </div>
 
-            <!-- Header Right: Jam Realtime & Tombol Logout -->
-            <div class="header-actions">
-              <!-- Jam Realtime WITA -->
-              <div class="clock-widget">
-                <svg class="clock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="10" />
-                  <polyline points="12 6 12 12 16 14" />
-                </svg>
-                <span id="realtime-clock" class="clock-time">Memuat waktu...</span>
+            <!-- Header Right: Jam Realtime, Tombol Logout, & Statistik Kunjungan -->
+            <div class="header-right-panel">
+              <div class="header-actions">
+                <!-- Jam Realtime WITA -->
+                <div class="clock-widget">
+                  <svg class="clock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
+                  <span id="realtime-clock" class="clock-time">Memuat waktu...</span>
+                </div>
+
+                <!-- Tombol Logout -->
+                <button type="button" id="btn-trigger-logout" class="btn-logout" title="Keluar dari Portal">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                  </svg>
+                  <span>Keluar</span>
+                </button>
               </div>
 
-              <!-- Tombol Logout -->
-              <button type="button" id="btn-trigger-logout" class="btn-logout" title="Keluar dari Portal">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
-                <span>Keluar</span>
-              </button>
+              <!-- Bar Statistik: Total Kunjungan (Tepat di Bawah Jam & Logout) -->
+              <div class="header-stats-bar" id="portal-stats-bar" aria-label="Statistik Penggunaan Portal">
+                <div class="stat-pill stat-pill-visit" title="Total kunjungan dan aktivitas landing page portal">
+                  <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                  <span class="stat-label">Total Kunjungan:</span>
+                  <span id="stat-total-visits" class="stat-value">372</span>
+                </div>
+              </div>
             </div>
 
           </div>

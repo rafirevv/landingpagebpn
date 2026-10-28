@@ -150,6 +150,121 @@
   }
 
   /**
+   * ============================================================================
+   * MANAJEMEN STATISTIK PORTAL (TOTAL KUNJUNGAN)
+   * ============================================================================
+   */
+  const StatsManager = {
+    apiEndpoint: "api/stats.php",
+    debounceKey: "bpn_last_visit_ts",
+    localVisitsKey: "bpn_portal_visits",
+    localClicksKey: "bpn_portal_clicks",
+    isInitialized: false,
+
+    formatNumber(num) {
+      try {
+        return new Intl.NumberFormat("id-ID").format(num);
+      } catch {
+        return String(num);
+      }
+    },
+
+    updateUI(totalVisits, animated = false) {
+      const totalVisitsEl = document.getElementById("stat-total-visits");
+
+      if (totalVisitsEl && totalVisits !== undefined) {
+        totalVisitsEl.textContent = this.formatNumber(totalVisits);
+        if (animated) {
+          totalVisitsEl.classList.remove("pulse-anim");
+          void totalVisitsEl.offsetWidth;
+          totalVisitsEl.classList.add("pulse-anim");
+        }
+      }
+    },
+
+    init() {
+      if (this.isInitialized) return;
+      this.isInitialized = true;
+
+      // Debounce kunjungan 10 detik agar tidak double count saat refresh cepat
+      const now = Date.now();
+      const lastVisit = parseInt(sessionStorage.getItem(this.debounceKey) || "0", 10);
+      const shouldCountVisit = (now - lastVisit) > 10000;
+
+      if (shouldCountVisit) {
+        sessionStorage.setItem(this.debounceKey, String(now));
+        this.recordVisit();
+      } else {
+        this.fetchStats();
+      }
+    },
+
+    fetchStats() {
+      fetch(this.apiEndpoint + "?t=" + Date.now())
+        .then(res => {
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          return res.json();
+        })
+        .then(data => {
+          if (data && data.success) {
+            localStorage.setItem(this.localVisitsKey, String(data.visits));
+            localStorage.setItem(this.localClicksKey, String(data.clicks));
+            const total = data.totalVisits !== undefined ? data.totalVisits : ((data.visits || 0) + (data.clicks || 0));
+            this.updateUI(total);
+          }
+        })
+        .catch(() => {
+          const localVisits = parseInt(localStorage.getItem(this.localVisitsKey) || "372", 10);
+          const localClicks = parseInt(localStorage.getItem(this.localClicksKey) || "0", 10);
+          this.updateUI(localVisits + localClicks);
+        });
+    },
+
+    recordVisit() {
+      fetch(this.apiEndpoint + "?action=visit&t=" + Date.now(), { method: "POST" })
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.success) {
+            localStorage.setItem(this.localVisitsKey, String(data.visits));
+            localStorage.setItem(this.localClicksKey, String(data.clicks));
+            const total = data.totalVisits !== undefined ? data.totalVisits : ((data.visits || 0) + (data.clicks || 0));
+            this.updateUI(total, true);
+          }
+        })
+        .catch(() => {
+          let visits = parseInt(localStorage.getItem(this.localVisitsKey) || "371", 10) + 1;
+          const clicks = parseInt(localStorage.getItem(this.localClicksKey) || "0", 10);
+          localStorage.setItem(this.localVisitsKey, String(visits));
+          this.updateUI(visits + clicks, true);
+        });
+    },
+
+    recordClick(linkId) {
+      // Optimistic instant UI update
+      const totalVisitsEl = document.getElementById("stat-total-visits");
+      let currentVal = parseInt((totalVisitsEl && totalVisitsEl.textContent ? totalVisitsEl.textContent.replace(/\./g, "") : "0"), 10);
+      if (isNaN(currentVal)) currentVal = 0;
+      this.updateUI(currentVal + 1, true);
+
+      const url = `${this.apiEndpoint}?action=click&linkId=${encodeURIComponent(linkId || "")}&t=${Date.now()}`;
+      fetch(url, { method: "POST" })
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.success) {
+            localStorage.setItem(this.localVisitsKey, String(data.visits));
+            localStorage.setItem(this.localClicksKey, String(data.clicks));
+            const total = data.totalVisits !== undefined ? data.totalVisits : ((data.visits || 0) + (data.clicks || 0));
+            this.updateUI(total);
+          }
+        })
+        .catch(() => {
+          let clicks = parseInt(localStorage.getItem(this.localClicksKey) || "0", 10) + 1;
+          localStorage.setItem(this.localClicksKey, String(clicks));
+        });
+    }
+  };
+
+  /**
    * Switcher View / Route Guard
    */
   function renderView() {
@@ -162,6 +277,7 @@
       if (dashboardView) dashboardView.classList.remove("view-hidden");
 
       renderLinksGrid();
+      StatsManager.init();
       window.scrollTo(0, 0);
     } else {
       if (dashboardView) dashboardView.classList.add("view-hidden");
@@ -238,6 +354,24 @@
         </button>
       </div>
     `;
+
+    // Pasang event listener buka tautan untuk mencatat statistik klik
+    const openBtn = card.querySelector(".btn-open-link");
+    if (openBtn) {
+      openBtn.addEventListener("click", () => {
+        StatsManager.recordClick(item.id);
+      });
+    }
+
+    const cardTitle = card.querySelector(".card-title");
+    if (cardTitle) {
+      cardTitle.style.cursor = "pointer";
+      cardTitle.title = `Buka ${item.title}`;
+      cardTitle.addEventListener("click", () => {
+        StatsManager.recordClick(item.id);
+        window.open(item.url, item.target || "_blank", "noopener,noreferrer");
+      });
+    }
 
     // Pasang event listener tombol salin link
     const copyBtn = card.querySelector(".btn-copy-link");
