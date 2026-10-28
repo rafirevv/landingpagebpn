@@ -126,7 +126,6 @@ button {
   margin-right: auto;
   padding-left: 1.5rem;
   padding-right: 1.5rem;
-  box-sizing: border-box;
 }
 
 .view-hidden {
@@ -147,7 +146,6 @@ button {
     linear-gradient(135deg, rgba(11, 37, 69, 0.42) 0%, rgba(20, 60, 115, 0.32) 50%, rgba(7, 23, 43, 0.48) 100%),
     url('../assets/gedung-kantah.jpg?v=2.0') no-repeat center center / cover;
   padding: 2.5rem 1.25rem;
-  box-sizing: border-box;
   overflow-y: auto;
 }
 
@@ -394,10 +392,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
   right: 0.65rem;
   top: 50%;
   transform: translateY(-50%);
-  background: transparent;
-  border: none;
   color: rgba(255, 255, 255, 0.7);
-  cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -574,10 +569,6 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
   position: relative;
   z-index: 2;
   background: transparent;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  border-bottom: none;
-  box-shadow: none;
 }
 
 /* Header Full-Width Layout: Logo di pojok kiri, Jam & User di pojok kanan */
@@ -991,18 +982,6 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
   border: 1px solid rgba(5, 150, 105, 0.2);
 }
 
-.icon-navy {
-  background: #EFF6FF;
-  color: var(--bpn-navy-800);
-  border: 1px solid rgba(19, 54, 96, 0.2);
-}
-
-.icon-amber {
-  background: #FFFBEB;
-  color: #D97706;
-  border: 1px solid rgba(217, 119, 6, 0.25);
-}
-
 /* Badge System */
 .badge-tag {
   display: inline-flex;
@@ -1028,16 +1007,6 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 .badge-emerald {
   background: #D1FAE5;
   color: #065F46;
-}
-
-.badge-navy {
-  background: #E2E8F0;
-  color: var(--bpn-navy-900);
-}
-
-.badge-amber {
-  background: #FEF3C7;
-  color: #B45309;
 }
 
 /* Card Body */
@@ -1453,12 +1422,10 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 
   .hero-title {
     font-size: 1.6rem;
-    text-align: left;
   }
 
   .hero-subtitle {
     font-size: 0.9rem;
-    text-align: left;
   }
 
   .links-grid {
@@ -1542,7 +1509,6 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 
   .login-portal-title {
     font-size: clamp(0.92rem, 4.3vw, 1.35rem);
-    white-space: nowrap;
   }
 
   .form-control {
@@ -1558,7 +1524,6 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     font-size: 1.35rem;
     line-height: 1.3;
     margin-bottom: 0.35rem;
-    text-align: left;
   }
 
   .hero-title span {
@@ -1568,7 +1533,6 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
   .hero-subtitle {
     font-size: 0.85rem;
     line-height: 1.45;
-    text-align: left;
   }
 
   /* Link Cards Grid Mobile */

@@ -14,7 +14,6 @@
     archive: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>`,
     map: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>`,
     chart: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>`,
-    shield: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
     "file-text": `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>`,
     "external-link": `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`,
     copy: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>`,
@@ -160,13 +159,13 @@
    */
   const StatsManager = {
     DEFAULT_BASELINE: 372,
-    sessionKey: "bpn_portal_visit_recorded",
     cachedVisitsKey: "bpn_portal_total_visits_cache",
     currentTotal: 372,
     pollTimer: null,
     broadcastChannel: null,
     isInitialized: false,
     isFetching: false,
+    pendingMutations: 0,
 
     getApiUrl(query = "") {
       try {
@@ -198,6 +197,11 @@
       }
       if (isNaN(totalVisits) || totalVisits < this.DEFAULT_BASELINE) {
         totalVisits = this.DEFAULT_BASELINE;
+      }
+
+      // Pastikan nilai tidak pernah mundur dari angka tertinggi yang sudah tercatat
+      if (this.currentTotal && totalVisits < this.currentTotal) {
+        totalVisits = this.currentTotal;
       }
 
       const prevTotal = this.currentTotal;
@@ -237,12 +241,8 @@
         const cached = parseInt(localStorage.getItem(this.cachedVisitsKey) || "", 10);
         if (!isNaN(cached) && cached >= this.DEFAULT_BASELINE) {
           this.currentTotal = cached;
-        } else {
-          this.currentTotal = this.DEFAULT_BASELINE;
         }
-      } catch {
-        this.currentTotal = this.DEFAULT_BASELINE;
-      }
+      } catch {}
 
       this.updateUI(this.currentTotal, false);
 
@@ -260,41 +260,22 @@
         }
       } catch {}
 
-      // Catat kunjungan satu kali per sesi (terpusat ke server bersama)
-      let alreadyRecorded = false;
-      try {
-        alreadyRecorded = sessionStorage.getItem(this.sessionKey) === "1";
-      } catch {}
+      // Muat angka saat ini dari server; penambahan kunjungan dicatat saat pengguna login masuk ke website
+      this.fetchStats();
 
-      if (!alreadyRecorded) {
-        try {
-          sessionStorage.setItem(this.sessionKey, "1");
-        } catch {}
-        this.recordVisit();
-      } else {
-        this.fetchStats();
-      }
-
-      // Mulai Heartbeat Polling Realtime (Memantau kunjungan & klik dari seluruh perangkat lain)
+      // Mulai Heartbeat Polling Realtime
       this.startRealtimePolling();
 
       // Sinkronisasi seketika saat pengguna membuka kembali tab atau fokus ke browser
       document.addEventListener("visibilitychange", () => {
         if (!document.hidden) {
           this.fetchStats();
-          this.restartPolling();
-        } else {
-          this.restartPolling();
         }
+        this.startRealtimePolling();
       });
 
-      window.addEventListener("focus", () => {
-        this.fetchStats();
-      });
-
-      window.addEventListener("online", () => {
-        this.fetchStats();
-      });
+      window.addEventListener("focus", () => this.fetchStats());
+      window.addEventListener("online", () => this.fetchStats());
     },
 
     broadcastUpdate(totalVisits) {
@@ -310,12 +291,10 @@
     },
 
     fetchStats() {
-      if (this.isFetching) return;
+      if (this.isFetching || this.pendingMutations > 0) return;
       this.isFetching = true;
 
-      const url = this.getApiUrl("t=" + Date.now());
-
-      fetch(url, {
+      fetch(this.getApiUrl("t=" + Date.now()), {
         method: "GET",
         headers: { "Accept": "application/json" }
       })
@@ -324,85 +303,57 @@
           return res.json();
         })
         .then(data => {
-          if (data && data.success) {
-            const total = data.totalVisits !== undefined ? data.totalVisits : ((data.visits || 0) + (data.clicks || 0));
-            if (total >= this.DEFAULT_BASELINE) {
-              const changed = total !== this.currentTotal;
-              this.updateUI(total, changed);
-              if (changed) {
-                this.broadcastUpdate(total);
-              }
+          if (data && data.success && this.pendingMutations === 0) {
+            const total = data.totalVisits !== undefined ? data.totalVisits : (data.visits || 0);
+            if (total > this.currentTotal) {
+              this.updateUI(total, true);
+              this.broadcastUpdate(total);
             }
           }
         })
-        .catch(() => {
-          // Server sedang memproses atau offline sementara; pertahankan angka server terakhir tanpa menghitung lokal
-        })
+        .catch(() => {})
         .finally(() => {
           this.isFetching = false;
         });
     },
 
     recordVisit() {
-      const url = this.getApiUrl("action=visit&t=" + Date.now());
+      const nextVal = (this.currentTotal || this.DEFAULT_BASELINE) + 1;
+      this.updateUI(nextVal, true);
+      this.broadcastUpdate(nextVal);
+
+      this.pendingMutations++;
+      const url = this.getApiUrl(`action=visit&minTotal=${nextVal}&t=${Date.now()}`);
 
       fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json" }
+        headers: { "Content-Type": "application/json" },
+        keepalive: true
       })
         .then(res => res.json())
         .then(data => {
           if (data && data.success) {
-            const total = data.totalVisits !== undefined ? data.totalVisits : ((data.visits || 0) + (data.clicks || 0));
-            if (total >= this.DEFAULT_BASELINE) {
-              this.updateUI(total, true);
-              this.broadcastUpdate(total);
+            const total = data.totalVisits !== undefined ? data.totalVisits : (data.visits || 0);
+            if (total >= this.currentTotal) {
+              this.updateUI(total, total > this.currentTotal);
+              this.broadcastUpdate(this.currentTotal);
             }
           }
         })
         .catch(() => {
           this.updateUI(this.currentTotal, false);
-        });
-    },
-
-    recordClick(linkId) {
-      // Optimistic instant feedback
-      const nextVal = (this.currentTotal || this.DEFAULT_BASELINE) + 1;
-      this.updateUI(nextVal, true);
-      this.broadcastUpdate(nextVal);
-
-      const url = this.getApiUrl(`action=click&linkId=${encodeURIComponent(linkId || "")}&t=${Date.now()}`);
-
-      fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" }
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data && data.success) {
-            const total = data.totalVisits !== undefined ? data.totalVisits : ((data.visits || 0) + (data.clicks || 0));
-            if (total >= this.DEFAULT_BASELINE) {
-              this.updateUI(total);
-              this.broadcastUpdate(total);
-            }
-          }
         })
-        .catch(() => {
-          // Jangan rollback agar tampilan tidak flick
+        .finally(() => {
+          this.pendingMutations = Math.max(0, this.pendingMutations - 1);
         });
     },
 
     startRealtimePolling() {
       this.stopRealtimePolling();
-      // 4 detik saat tab aktif, 15 detik saat tab di latar belakang (hemat daya)
       const intervalMs = document.hidden ? 15000 : 4000;
       this.pollTimer = setInterval(() => {
         this.fetchStats();
       }, intervalMs);
-    },
-
-    restartPolling() {
-      this.startRealtimePolling();
     },
 
     stopRealtimePolling() {
@@ -426,7 +377,7 @@
       if (dashboardView) dashboardView.classList.remove("view-hidden");
 
       renderLinksGrid();
-      StatsManager.updateUI(StatsManager.currentTotal);
+      StatsManager.updateUI(StatsManager.currentTotal, true);
       window.scrollTo(0, 0);
     } else {
       if (dashboardView) dashboardView.classList.add("view-hidden");
@@ -506,20 +457,11 @@
       </div>
     `;
 
-    // Pasang event listener buka tautan untuk mencatat statistik klik
-    const openBtn = card.querySelector(".btn-open-link");
-    if (openBtn) {
-      openBtn.addEventListener("click", () => {
-        StatsManager.recordClick(item.id);
-      });
-    }
-
     const cardTitle = card.querySelector(".card-title");
     if (cardTitle) {
       cardTitle.style.cursor = "pointer";
       cardTitle.title = `Buka ${item.title}`;
       cardTitle.addEventListener("click", () => {
-        StatsManager.recordClick(item.id);
         window.open(item.url, item.target || "_blank", "noopener,noreferrer");
       });
     }
@@ -717,7 +659,8 @@
     renderView();
   }
 
-  // Ekspos objek App ke window
+  // Ekspos objek App & StatsManager ke window
+  window.StatsManager = StatsManager;
   window.App = {
     init,
     renderView,

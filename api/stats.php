@@ -36,14 +36,12 @@ $DEFAULT_BASELINE_VISITS = 372;
 
 $defaultData = [
     'visits' => $DEFAULT_BASELINE_VISITS,
-    'clicks' => 0,
-    'lastUpdated' => date('c'),
-    'linkClicks' => []
+    'lastUpdated' => date('c')
 ];
 
 // Baca parameter aksi (dari GET atau POST json/body)
 $action = isset($_GET['action']) ? trim($_GET['action']) : '';
-$linkId = isset($_GET['linkId']) ? trim($_GET['linkId']) : '';
+$minTotal = isset($_GET['minTotal']) ? (int)$_GET['minTotal'] : 0;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $rawInput = file_get_contents('php://input');
@@ -53,19 +51,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$action && isset($input['action'])) {
                 $action = trim($input['action']);
             }
-            if (!$linkId && isset($input['linkId'])) {
-                $linkId = trim($input['linkId']);
+            if (!$minTotal && isset($input['minTotal'])) {
+                $minTotal = (int)$input['minTotal'];
             }
         }
     }
 }
 
 // Fungsi pembantu membaca data statistik dengan aman
-function loadStats($filePath, $defaults, $minVisits) {
-    if (!file_exists($filePath)) {
-        return $defaults;
-    }
-    $content = @file_get_contents($filePath);
+function parseStatsContent($content, $defaults, $minVisits) {
     if (!$content) {
         return $defaults;
     }
@@ -73,56 +67,35 @@ function loadStats($filePath, $defaults, $minVisits) {
     if (!is_array($decoded)) {
         return $defaults;
     }
-    $stats = array_merge($defaults, $decoded);
-    if (!isset($stats['visits']) || (int)$stats['visits'] < $minVisits) {
-        $stats['visits'] = $minVisits;
+    $visits = (int)($decoded['visits'] ?? $minVisits) + (int)($decoded['clicks'] ?? 0);
+    if ($visits < $minVisits) {
+        $visits = $minVisits;
     }
-    if (!isset($stats['clicks'])) {
-        $stats['clicks'] = 0;
-    }
-    return $stats;
+    return [
+        'visits' => $visits,
+        'lastUpdated' => $decoded['lastUpdated'] ?? $defaults['lastUpdated']
+    ];
 }
 
 $stats = $defaultData;
 
-// Jika ada mutasi (visit, click, reset), gunakan atomic lock file
-if ($action === 'visit' || $action === 'click' || $action === 'reset') {
+// Jika ada mutasi (visit, reset), gunakan atomic lock file
+if ($action === 'visit' || $action === 'reset') {
     $fp = @fopen($statsFile, 'c+');
     if ($fp) {
         if (flock($fp, LOCK_EX)) {
             $fileSize = filesize($statsFile);
-            $content = '';
-            if ($fileSize > 0) {
-                $content = fread($fp, $fileSize);
-            }
-            $decoded = $content ? @json_decode($content, true) : null;
-            if (is_array($decoded)) {
-                $stats = array_merge($defaultData, $decoded);
-            } else {
-                $stats = $defaultData;
-            }
-
-            // Pastikan tidak di bawah baseline
-            if (!isset($stats['visits']) || (int)$stats['visits'] < $DEFAULT_BASELINE_VISITS) {
-                $stats['visits'] = $DEFAULT_BASELINE_VISITS;
-            }
+            $content = $fileSize > 0 ? fread($fp, $fileSize) : '';
+            $stats = parseStatsContent($content, $defaultData, $DEFAULT_BASELINE_VISITS);
 
             if ($action === 'visit') {
                 $stats['visits'] = (int)$stats['visits'] + 1;
-                $stats['lastUpdated'] = date('c');
-            } elseif ($action === 'click') {
-                $stats['clicks'] = (int)($stats['clicks'] ?? 0) + 1;
-                if ($linkId) {
-                    if (!isset($stats['linkClicks']) || !is_array($stats['linkClicks'])) {
-                        $stats['linkClicks'] = [];
-                    }
-                    $stats['linkClicks'][$linkId] = (int)($stats['linkClicks'][$linkId] ?? 0) + 1;
+                if ($minTotal > 0 && (int)$stats['visits'] < $minTotal) {
+                    $stats['visits'] = $minTotal;
                 }
                 $stats['lastUpdated'] = date('c');
             } elseif ($action === 'reset') {
                 $stats['visits'] = $DEFAULT_BASELINE_VISITS;
-                $stats['clicks'] = 0;
-                $stats['linkClicks'] = [];
                 $stats['lastUpdated'] = date('c');
             }
 
@@ -136,18 +109,16 @@ if ($action === 'visit' || $action === 'click' || $action === 'reset') {
     }
 } else {
     // Mode Baca Realtime (Polling / GET)
-    $stats = loadStats($statsFile, $defaultData, $DEFAULT_BASELINE_VISITS);
+    $content = file_exists($statsFile) ? @file_get_contents($statsFile) : '';
+    $stats = parseStatsContent($content, $defaultData, $DEFAULT_BASELINE_VISITS);
 }
 
 $visits = (int)($stats['visits'] ?? $DEFAULT_BASELINE_VISITS);
-$clicks = (int)($stats['clicks'] ?? 0);
-$totalVisits = $visits + $clicks;
 
 echo json_encode([
     'success' => true,
-    'totalVisits' => $totalVisits,
+    'totalVisits' => $visits,
     'visits' => $visits,
-    'clicks' => $clicks,
     'lastUpdated' => $stats['lastUpdated'] ?? date('c'),
     'serverTime' => time()
 ]);

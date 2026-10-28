@@ -28,13 +28,6 @@
           return null;
         }
 
-        // Sinkronisasi data user dari AUTH_CONFIG jika konfigurasi diperbarui
-        if (window.AUTH_CONFIG && window.AUTH_CONFIG.user) {
-          session.user.name = window.AUTH_CONFIG.user.name || session.user.name;
-          session.user.role = window.AUTH_CONFIG.user.role || session.user.role;
-          session.user.avatarInitials = window.AUTH_CONFIG.user.avatarInitials || this.getInitials(session.user.name);
-        }
-
         return session.user;
       } catch (err) {
         console.error("Gagal membaca sesi pengguna:", err);
@@ -76,16 +69,7 @@
         };
       }
 
-      const matchedUser = auth.user || {
-        username: "admin",
-        name: "ATR/BPN",
-        role: "Pegawai",
-        avatarInitials: "BPN",
-        department: "Kantor Pertanahan Kab. Bone Bolango"
-      };
-
-      const finalUsername = matchedUser.username || "admin";
-      const displayName = matchedUser.name || "ATR/BPN";
+      const matchedUser = auth.user || {};
 
       // Hitung batas waktu kadaluarsa sesi
       const durationMin = auth.sessionDurationMinutes || 120;
@@ -93,22 +77,25 @@
 
       const sessionData = {
         user: {
-          username: finalUsername,
-          name: displayName,
+          username: matchedUser.username || "admin",
+          name: matchedUser.name || "ATR/BPN",
           role: matchedUser.role || "Pegawai",
           department: matchedUser.department || "Kantor Pertanahan Kab. Bone Bolango",
-          avatarInitials: matchedUser.avatarInitials || this.getInitials(displayName),
           loginAt: new Date().toISOString()
         },
         expiresAt: expiresAt
       };
 
       const storage = isRemember ? localStorage : sessionStorage;
-      // Bersihkan keduanya dulu agar tidak ada konflik
       localStorage.removeItem(STORAGE_KEY);
       sessionStorage.removeItem(STORAGE_KEY);
 
       storage.setItem(STORAGE_KEY, JSON.stringify(sessionData));
+
+      // Tambah total kunjungan setiap kali pengguna berhasil login untuk masuk ke portal
+      if (window.StatsManager && typeof window.StatsManager.recordVisit === "function") {
+        window.StatsManager.recordVisit();
+      }
 
       return {
         success: true,
@@ -129,17 +116,6 @@
       } else if (reload) {
         window.location.reload();
       }
-    },
-
-    /**
-     * Ekstrak 2 huruf inisial dari nama
-     */
-    getInitials(name) {
-      if (!name) return "BPN";
-      if (name.toUpperCase().includes("BPN")) return "BPN";
-      const parts = name.split(" ").filter(Boolean);
-      if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
-      return (parts[0][0] + parts[1][0]).toUpperCase();
     }
   };
 

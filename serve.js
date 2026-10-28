@@ -34,39 +34,35 @@ const server = http.createServer((req, res) => {
 
     const statsFile = path.join(ROOT, 'data', 'stats.json');
     const DEFAULT_BASELINE = 372;
-    let stats = { visits: DEFAULT_BASELINE, clicks: 0, lastUpdated: new Date().toISOString(), linkClicks: {} };
+    let stats = { visits: DEFAULT_BASELINE, lastUpdated: new Date().toISOString() };
 
     try {
       if (fs.existsSync(statsFile)) {
-        stats = { ...stats, ...JSON.parse(fs.readFileSync(statsFile, 'utf8')) };
+        const parsed = JSON.parse(fs.readFileSync(statsFile, 'utf8'));
+        stats.visits = (parsed.visits || DEFAULT_BASELINE) + (parsed.clicks || 0);
+        stats.lastUpdated = parsed.lastUpdated || stats.lastUpdated;
       }
     } catch (e) {}
 
-    if (stats.visits === undefined || stats.visits < DEFAULT_BASELINE) {
+    if (stats.visits < DEFAULT_BASELINE) {
       stats.visits = DEFAULT_BASELINE;
     }
 
     const action = parsedUrl.searchParams.get('action');
-    const linkId = parsedUrl.searchParams.get('linkId');
+    const minTotal = parseInt(parsedUrl.searchParams.get('minTotal') || '0', 10);
 
     if (action === 'visit') {
-      stats.visits = (stats.visits || DEFAULT_BASELINE) + 1;
-      stats.lastUpdated = new Date().toISOString();
-    } else if (action === 'click') {
-      stats.clicks = (stats.clicks || 0) + 1;
-      if (linkId) {
-        stats.linkClicks = stats.linkClicks || {};
-        stats.linkClicks[linkId] = (stats.linkClicks[linkId] || 0) + 1;
+      stats.visits += 1;
+      if (minTotal > 0 && stats.visits < minTotal) {
+        stats.visits = minTotal;
       }
       stats.lastUpdated = new Date().toISOString();
     } else if (action === 'reset') {
       stats.visits = DEFAULT_BASELINE;
-      stats.clicks = 0;
-      stats.linkClicks = {};
       stats.lastUpdated = new Date().toISOString();
     }
 
-    if (action === 'visit' || action === 'click' || action === 'reset' || !fs.existsSync(statsFile)) {
+    if (action === 'visit' || action === 'reset' || !fs.existsSync(statsFile)) {
       try {
         const dataDir = path.join(ROOT, 'data');
         if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
@@ -74,15 +70,10 @@ const server = http.createServer((req, res) => {
       } catch (e) {}
     }
 
-    const visits = stats.visits || DEFAULT_BASELINE;
-    const clicks = stats.clicks || 0;
-    const totalVisits = visits + clicks;
-
     res.end(JSON.stringify({
       success: true,
-      totalVisits: totalVisits,
-      visits: visits,
-      clicks: clicks,
+      totalVisits: stats.visits,
+      visits: stats.visits,
       lastUpdated: stats.lastUpdated
     }));
     return;
