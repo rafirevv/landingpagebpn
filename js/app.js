@@ -159,7 +159,9 @@
    */
   const StatsManager = {
     DEFAULT_BASELINE: 372,
-    cachedVisitsKey: "bpn_portal_total_visits_cache",
+    CLOUD_NAMESPACE: "kantah-bonebolango-portal",
+    CLOUD_KEY: "portal_login_visits_v1",
+    cachedVisitsKey: "bpn_portal_realtime_visits_v2",
     currentTotal: 372,
     pollTimer: null,
     broadcastChannel: null,
@@ -167,7 +169,7 @@
     isFetching: false,
     pendingMutations: 0,
 
-    getApiUrl(query = "") {
+    getLocalApiUrl(query = "") {
       try {
         let path = window.location.pathname || "/";
         if (path.endsWith("index.html")) {
@@ -181,6 +183,11 @@
       } catch {
         return "api/stats.php" + (query ? (query.startsWith("?") ? query : "?" + query) : "");
       }
+    },
+
+    getCloudUrl(action = "get") {
+      const endpoint = action === "hit" ? "hit" : "get";
+      return `https://abacus.jasoncameron.dev/${endpoint}/${this.CLOUD_NAMESPACE}/${this.CLOUD_KEY}`;
     },
 
     formatNumber(num) {
@@ -197,11 +204,6 @@
       }
       if (isNaN(totalVisits) || totalVisits < this.DEFAULT_BASELINE) {
         totalVisits = this.DEFAULT_BASELINE;
-      }
-
-      // Pastikan nilai tidak pernah mundur dari angka tertinggi yang sudah tercatat
-      if (this.currentTotal && totalVisits < this.currentTotal) {
-        totalVisits = this.currentTotal;
       }
 
       const prevTotal = this.currentTotal;
@@ -221,7 +223,7 @@
 
       targets.forEach(el => {
         el.textContent = formatted;
-        if (animated || (prevTotal !== null && totalVisits > prevTotal)) {
+        if (animated || (prevTotal !== null && totalVisits !== prevTotal)) {
           el.classList.remove("pulse-anim");
           void el.offsetWidth;
           el.classList.add("pulse-anim");
@@ -236,8 +238,12 @@
       }
       this.isInitialized = true;
 
-      // Ambil nilai awal dari cache jika ada, minimal 372
+      // Bersihkan key cache versi lama yang sempat menyimpan angka lokal per-device
       try {
+        localStorage.removeItem("bpn_portal_total_visits_cache");
+        localStorage.removeItem("bpn_portal_visits");
+        localStorage.removeItem("bpn_portal_clicks");
+
         const cached = parseInt(localStorage.getItem(this.cachedVisitsKey) || "", 10);
         if (!isNaN(cached) && cached >= this.DEFAULT_BASELINE) {
           this.currentTotal = cached;
@@ -252,7 +258,7 @@
           this.broadcastChannel = new BroadcastChannel("bpn_portal_stats");
           this.broadcastChannel.onmessage = (event) => {
             if (event && event.data && typeof event.data.totalVisits === "number") {
-              if (event.data.totalVisits > this.currentTotal) {
+              if (event.data.totalVisits !== this.currentTotal) {
                 this.updateUI(event.data.totalVisits, true);
               }
             }
@@ -260,10 +266,10 @@
         }
       } catch {}
 
-      // Muat angka saat ini dari server; penambahan kunjungan dicatat saat pengguna login masuk ke website
+      // Muat angka terpusat saat ini dari server/cloud
       this.fetchStats();
 
-      // Mulai Heartbeat Polling Realtime
+      // Mulai Heartbeat Polling Realtime (3 detik saat tab aktif)
       this.startRealtimePolling();
 
       // Sinkronisasi seketika saat pengguna membuka kembali tab atau fokus ke browser
@@ -294,24 +300,50 @@
       if (this.isFetching || this.pendingMutations > 0) return;
       this.isFetching = true;
 
-      fetch(this.getApiUrl("t=" + Date.now()), {
+      // 1. Utamakan Cloud Counter Global agar lintas perangkat (Laptop, HP, jaringan berbeda) selalu sama realtime
+      fetch(this.getCloudUrl("get"), {
         method: "GET",
-        headers: { "Accept": "application/json" }
+        cache: "no-store"
       })
         .then(res => {
-          if (!res.ok) throw new Error("HTTP " + res.status);
+          if (res.status === 404) {
+            return { value: 0 };
+          }
+          if (!res.ok) throw new Error("Cloud HTTP " + res.status);
           return res.json();
         })
         .then(data => {
-          if (data && data.success && this.pendingMutations === 0) {
-            const total = data.totalVisits !== undefined ? data.totalVisits : (data.visits || 0);
-            if (total > this.currentTotal) {
+          if (this.pendingMutations === 0 && data && typeof data.value === "number") {
+            const total = this.DEFAULT_BASELINE + Math.max(0, data.value);
+            if (total !== this.currentTotal) {
               this.updateUI(total, true);
               this.broadcastUpdate(total);
+              fetch(this.getLocalApiUrl(`action=sync&visits=${total}&t=${Date.now()}`), { method: "POST" }).catch(() => {});
             }
           }
         })
-        .catch(() => {})
+        .catch(() => {
+          // 2. Fallback ke server lokal (api/stats.php) jika di jaringan lokal tertutup (offline LAN)
+          return fetch(this.getLocalApiUrl("t=" + Date.now()), {
+            method: "GET",
+            headers: { "Accept": "application/json" },
+            cache: "no-store"
+          })
+            .then(res => {
+              if (!res.ok) throw new Error("Local HTTP " + res.status);
+              return res.json();
+            })
+            .then(data => {
+              if (this.pendingMutations === 0 && data && data.success) {
+                const total = data.totalVisits !== undefined ? data.totalVisits : (data.visits || this.DEFAULT_BASELINE);
+                if (total !== this.currentTotal) {
+                  this.updateUI(total, true);
+                  this.broadcastUpdate(total);
+                }
+              }
+            })
+            .catch(() => {});
+        })
         .finally(() => {
           this.isFetching = false;
         });
@@ -323,25 +355,44 @@
       this.broadcastUpdate(nextVal);
 
       this.pendingMutations++;
-      const url = this.getApiUrl(`action=visit&minTotal=${nextVal}&t=${Date.now()}`);
 
-      fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      // Tambah +1 ke Cloud Counter Global agar seluruh perangkat (HP, Laptop, dll) langsung tersinkronisasi realtime
+      fetch(this.getCloudUrl("hit"), {
+        method: "GET",
+        cache: "no-store",
         keepalive: true
       })
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) throw new Error("Cloud HTTP " + res.status);
+          return res.json();
+        })
         .then(data => {
-          if (data && data.success) {
-            const total = data.totalVisits !== undefined ? data.totalVisits : (data.visits || 0);
-            if (total >= this.currentTotal) {
-              this.updateUI(total, total > this.currentTotal);
-              this.broadcastUpdate(this.currentTotal);
-            }
+          if (data && typeof data.value === "number") {
+            const total = this.DEFAULT_BASELINE + Math.max(0, data.value);
+            this.updateUI(total, total !== this.currentTotal);
+            this.broadcastUpdate(total);
+            fetch(this.getLocalApiUrl(`action=sync&visits=${total}&t=${Date.now()}`), {
+              method: "POST",
+              keepalive: true
+            }).catch(() => {});
           }
         })
         .catch(() => {
-          this.updateUI(this.currentTotal, false);
+          // Fallback ke server lokal jika cloud tidak terjangkau
+          return fetch(this.getLocalApiUrl(`action=visit&t=${Date.now()}`), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            keepalive: true
+          })
+            .then(res => res.json())
+            .then(data => {
+              if (data && data.success) {
+                const total = data.totalVisits !== undefined ? data.totalVisits : (data.visits || this.DEFAULT_BASELINE);
+                this.updateUI(total, total !== this.currentTotal);
+                this.broadcastUpdate(total);
+              }
+            })
+            .catch(() => {});
         })
         .finally(() => {
           this.pendingMutations = Math.max(0, this.pendingMutations - 1);
@@ -350,7 +401,7 @@
 
     startRealtimePolling() {
       this.stopRealtimePolling();
-      const intervalMs = document.hidden ? 15000 : 4000;
+      const intervalMs = document.hidden ? 12000 : 3000;
       this.pollTimer = setInterval(() => {
         this.fetchStats();
       }, intervalMs);

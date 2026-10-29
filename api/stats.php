@@ -41,7 +41,7 @@ $defaultData = [
 
 // Baca parameter aksi (dari GET atau POST json/body)
 $action = isset($_GET['action']) ? trim($_GET['action']) : '';
-$minTotal = isset($_GET['minTotal']) ? (int)$_GET['minTotal'] : 0;
+$syncVisits = isset($_GET['visits']) ? (int)$_GET['visits'] : 0;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $rawInput = file_get_contents('php://input');
@@ -51,8 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$action && isset($input['action'])) {
                 $action = trim($input['action']);
             }
-            if (!$minTotal && isset($input['minTotal'])) {
-                $minTotal = (int)$input['minTotal'];
+            if (!$syncVisits && isset($input['visits'])) {
+                $syncVisits = (int)$input['visits'];
             }
         }
     }
@@ -67,7 +67,7 @@ function parseStatsContent($content, $defaults, $minVisits) {
     if (!is_array($decoded)) {
         return $defaults;
     }
-    $visits = (int)($decoded['visits'] ?? $minVisits) + (int)($decoded['clicks'] ?? 0);
+    $visits = (int)($decoded['visits'] ?? $minVisits);
     if ($visits < $minVisits) {
         $visits = $minVisits;
     }
@@ -79,8 +79,8 @@ function parseStatsContent($content, $defaults, $minVisits) {
 
 $stats = $defaultData;
 
-// Jika ada mutasi (visit, reset), gunakan atomic lock file
-if ($action === 'visit' || $action === 'reset') {
+// Jika ada mutasi (visit, sync, reset), gunakan atomic lock file
+if ($action === 'visit' || $action === 'sync' || $action === 'reset') {
     $fp = @fopen($statsFile, 'c+');
     if ($fp) {
         if (flock($fp, LOCK_EX)) {
@@ -90,9 +90,9 @@ if ($action === 'visit' || $action === 'reset') {
 
             if ($action === 'visit') {
                 $stats['visits'] = (int)$stats['visits'] + 1;
-                if ($minTotal > 0 && (int)$stats['visits'] < $minTotal) {
-                    $stats['visits'] = $minTotal;
-                }
+                $stats['lastUpdated'] = date('c');
+            } elseif ($action === 'sync' && $syncVisits >= $DEFAULT_BASELINE_VISITS) {
+                $stats['visits'] = $syncVisits;
                 $stats['lastUpdated'] = date('c');
             } elseif ($action === 'reset') {
                 $stats['visits'] = $DEFAULT_BASELINE_VISITS;

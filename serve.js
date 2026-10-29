@@ -49,20 +49,20 @@ const server = http.createServer((req, res) => {
     }
 
     const action = parsedUrl.searchParams.get('action');
-    const minTotal = parseInt(parsedUrl.searchParams.get('minTotal') || '0', 10);
+    const syncVisits = parseInt(parsedUrl.searchParams.get('visits') || '0', 10);
 
     if (action === 'visit') {
       stats.visits += 1;
-      if (minTotal > 0 && stats.visits < minTotal) {
-        stats.visits = minTotal;
-      }
+      stats.lastUpdated = new Date().toISOString();
+    } else if (action === 'sync' && syncVisits >= DEFAULT_BASELINE) {
+      stats.visits = syncVisits;
       stats.lastUpdated = new Date().toISOString();
     } else if (action === 'reset') {
       stats.visits = DEFAULT_BASELINE;
       stats.lastUpdated = new Date().toISOString();
     }
 
-    if (action === 'visit' || action === 'reset' || !fs.existsSync(statsFile)) {
+    if (action === 'visit' || action === 'sync' || action === 'reset' || !fs.existsSync(statsFile)) {
       try {
         const dataDir = path.join(ROOT, 'data');
         if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
